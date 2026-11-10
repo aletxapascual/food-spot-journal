@@ -57,6 +57,8 @@
 	<string>Dictate the review of your food spot.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Turn your voice into the text of your review.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Save the exact location of your food spot.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

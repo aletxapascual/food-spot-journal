@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import '../data/database_helper.dart';
 import '../models/food_spot.dart';
 import '../services/camera_service.dart';
+import '../services/location_service.dart';
 import '../services/speech_service.dart';
 import '../widgets/spot_image.dart';
 
@@ -20,6 +21,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final TextEditingController _reviewController = TextEditingController();
   final CameraService _cameraService = CameraService();
   final SpeechService _speechService = SpeechService();
+  final LocationService _locationService = LocationService();
   String? _tempImagePath;
   bool _isSaving = false;
   bool _speechReady = false;
@@ -93,10 +95,25 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       if (_tempImagePath != null) {
         imagePath = await _cameraService.saveToDocuments(_tempImagePath!);
       }
+
+      double? latitude;
+      double? longitude;
+      try {
+        final position = await _locationService.getCurrentPosition();
+        latitude = position?.latitude;
+        longitude = position?.longitude;
+      } catch (e) {
+        if (mounted) {
+          _showMessage('Saved without location: ${e.toString().replaceFirst('Exception: ', '')}');
+        }
+      }
+
       final spot = FoodSpot(
         name: _nameController.text.trim(),
         review: _reviewController.text.trim(),
         imagePath: imagePath,
+        latitude: latitude,
+        longitude: longitude,
         createdAt: DateTime.now().toIso8601String(),
       );
       await DatabaseHelper.instance.insertSpot(spot);
