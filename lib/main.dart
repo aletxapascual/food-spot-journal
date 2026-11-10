@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'screens/add_spot_screen.dart';
+import 'screens/detail_screen.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -14,7 +16,12 @@ class FoodSpotJournalApp extends StatelessWidget {
     return MaterialApp(
       title: 'Food Spot Journal',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange)),
-      home: const HomeScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/detail': (context) => const DetailScreen(),
+        '/add': (context) => const AddSpotScreen(),
+      },
     );
   }
 }
