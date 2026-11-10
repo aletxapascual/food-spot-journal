@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import '../data/database_helper.dart';
 import '../models/food_spot.dart';
 import '../services/camera_service.dart';
+import '../services/speech_service.dart';
 import '../widgets/spot_image.dart';
 
 /// Form to create a new food spot.
@@ -18,11 +19,16 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _reviewController = TextEditingController();
   final CameraService _cameraService = CameraService();
+  final SpeechService _speechService = SpeechService();
   String? _tempImagePath;
   bool _isSaving = false;
+  bool _speechReady = false;
+  bool _isListening = false;
+  String _textBeforeDictation = '';
 
   @override
   void dispose() {
+    _speechService.stopListening();
     _nameController.dispose();
     _reviewController.dispose();
     super.dispose();
@@ -42,6 +48,38 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     } catch (e) {
       if (!mounted) return;
       _showMessage(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  /// Starts or stops voice dictation for the review field.
+  Future<void> _toggleDictation() async {
+    if (_isListening) {
+      await _speechService.stopListening();
+      return;
+    }
+
+    if (!_speechReady) {
+      _speechReady = await _speechService.initialize((listening) {
+        if (mounted) setState(() => _isListening = listening);
+      });
+      if (!mounted) return;
+      if (!_speechReady) {
+        _showMessage('Microphone not available or permission denied. You can type the review instead.');
+        return;
+      }
+    }
+
+    _textBeforeDictation = _reviewController.text.trim();
+    try {
+      await _speechService.startListening((words) {
+        if (!mounted) return;
+        setState(() {
+          _reviewController.text = '$_textBeforeDictation $words'.trim();
+        });
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage('Could not start dictation: $e');
     }
   }
 
@@ -123,9 +161,18 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               TextFormField(
                 controller: _reviewController,
                 maxLines: 4,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Review',
-                  border: OutlineInputBorder(),
+                  helperText: _isListening ? 'Listening... tap the mic to stop' : 'Type or tap the mic to dictate',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    onPressed: _isSaving ? null : _toggleDictation,
+                    tooltip: 'Dictate review',
+                    icon: Icon(
+                      _isListening ? Icons.mic : Icons.mic_none,
+                      color: _isListening ? Colors.red : null,
+                    ),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
